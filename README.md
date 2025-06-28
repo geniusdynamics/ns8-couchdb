@@ -4,17 +4,18 @@ This is a template module for [NethServer 8](https://github.com/NethServer/ns8-c
 To start a new module from it:
 
 1. Click on [Use this template](https://github.com/NethServer/ns8-couchdb/generate).
-   Name your repo with `ns8-` prefix (e.g. `ns8-mymodule`). 
+   Name your repo with `ns8-` prefix (e.g. `ns8-mymodule`).
    Do not end your module name with a number, like ~~`ns8-baaad2`~~!
 
 1. Clone the repository, enter the cloned directory and
    [configure your GIT identity](https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup#_your_identity)
 
 1. Rename some references inside the repo:
+
    ```
    modulename=$(basename $(pwd) | sed 's/^ns8-//') &&
    git mv imageroot/systemd/user/couchdb.service imageroot/systemd/user/${modulename}.service &&
-   git mv imageroot/systemd/user/couchdb-app.service imageroot/systemd/user/${modulename}-app.service && 
+   git mv imageroot/systemd/user/couchdb-app.service imageroot/systemd/user/${modulename}-app.service &&
    git mv tests/couchdb.robot tests/${modulename}.robot &&
    sed -i "s/couchdb/${modulename}/g" $(find .github/ * -type f) &&
    git commit -a -m "Repository initialization"
@@ -33,7 +34,7 @@ To start a new module from it:
 
 Instantiate the module with:
 
-    add-module ghcr.io/nethserver/couchdb:latest 1
+    add-module ghcr.io/geniusdynamics/couchdb:latest 1
 
 The output of the command will return the instance name.
 Output example:
@@ -42,13 +43,13 @@ Output example:
 
 ## Configure
 
-Let's assume that the mattermost instance is named `couchdb1`.
+Let's assume that the couchdb instance is named `couchdb1`.
 
 Launch `configure-module`, by setting the following parameters:
+
 - `host`: a fully qualified domain name for the application
 - `http2https`: enable or disable HTTP to HTTPS redirection (true/false)
 - `lets_encrypt`: enable or disable Let's Encrypt certificate (true/false)
-
 
 Example:
 
@@ -63,14 +64,22 @@ EOF
 ```
 
 The above command will:
+
 - start and configure the couchdb instance
 - configure a virtual host for trafik to access the instance
 
 ## Get the configuration
+
 You can retrieve the configuration with
 
 ```
 api-cli run get-configuration --agent module/couchdb1
+```
+
+## Update
+
+```shell
+api-cli run update-module --data '{"module_url":"ghcr.io/geniusdynamics/couchdb:latest","instances":["couchdb1"],"force":true}'
 ```
 
 ## Uninstall
@@ -83,7 +92,7 @@ To uninstall the instance:
 
 Some configuration settings, like the smarthost setup, are not part of the
 `configure-module` action input: they are discovered by looking at some
-Redis keys.  To ensure the module is always up-to-date with the
+Redis keys. To ensure the module is always up-to-date with the
 centralized [smarthost
 setup](https://nethserver.github.io/ns8-core/core/smarthost/) every time
 couchdb starts, the command `bin/discover-smarthost` runs and refreshes
@@ -103,23 +112,25 @@ expected to work: it can be rewritten or discarded completely.
 some CLI are needed to debug
 
 - The module runs under an agent that initiate a lot of environment variables (in /home/couchdb1/.config/state), it could be nice to verify them
-on the root terminal
+  on the root terminal
 
-    `runagent -m couchdb1 env`
+      `runagent -m couchdb1 env`
 
 - you can become runagent for testing scripts and initiate all environment variables
-  
-    `runagent -m couchdb1`
 
- the path become : 
+  `runagent -m couchdb1`
+
+the path become :
+
 ```
     echo $PATH
     /home/couchdb1/.config/bin:/usr/local/agent/pyenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/usr/
 ```
 
 - if you want to debug a container or see environment inside
- `runagent -m couchdb1`
- ```
+  `runagent -m couchdb1`
+
+```
 podman ps
 CONTAINER ID  IMAGE                                      COMMAND               CREATED        STATUS        PORTS                    NAMES
 d292c6ff28e9  localhost/podman-pause:4.6.1-1702418000                          9 minutes ago  Up 9 minutes  127.0.0.1:20015->80/tcp  80b8de25945f-infra
@@ -128,6 +139,7 @@ d8df02bf6f4a  docker.io/library/mariadb:10.11.5          --character-set-s...  9
 ```
 
 you can see what environment variable is inside the container
+
 ```
 podman exec  couchdb-app env
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -150,12 +162,12 @@ you can run a shell inside the container
 
 ```
 podman exec -ti   couchdb-app sh
-/ # 
+/ #
 ```
+
 ## Testing
 
 Test the module using the `test-module.sh` script:
-
 
     ./test-module.sh <NODE_ADDR> ghcr.io/nethserver/couchdb:latest
 
