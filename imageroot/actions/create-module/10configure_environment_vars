@@ -23,8 +23,8 @@ def generate_random_password(length):
     return password[:length]
 
 MARIADB_ROOT_PASSWORD= generate_random_password(16)
-MARIADB_DATABASE="kickstart"
-MARIADB_USER="kickstart"
+MARIADB_DATABASE="couchdb"
+MARIADB_USER="couchdb"
 MARIADB_PASSWORD=generate_random_password(16)
     # mariadb env
 mariadb_config = {
