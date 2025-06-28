@@ -1,0 +1,34 @@
+#
+# Copyright (C) 2022 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+[Unit]
+Description=Podman  couchdb-app.service
+BindsTo=couchdb.service
+After=couchdb.service
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=%S/state/environment
+EnvironmentFile=-%S/state/smarthost.env
+WorkingDirectory=%S/state
+Restart=always
+TimeoutStopSec=70
+ExecStartPre=/bin/mkdir -p tmp
+ExecStartPre=/bin/rm -f %t/couchdb-app.pid %t/couchdb-app.ctr-id
+ExecStartPre=-runagent discover-smarthost
+ExecStart=/usr/bin/podman run --conmon-pidfile %t/couchdb-app.pid  --cidfile %t/couchdb-app.ctr-id --cgroups=no-conmon \
+    --pod-id-file %t/couchdb.pod-id --replace -d --name  couchdb-app  --env-file couchdb.env \
+    --volume couchdb-data:/opt/couchdb/data:Z \
+    --volume couchdb-config:/opt/couchdb/etc/local.d:Z \
+    ${COUCHDB_IMAGE}
+ExecStop=/usr/bin/podman stop --ignore --cidfile %t/couchdb-app.ctr-id -t 10
+ExecReload=/usr/bin/podman kill -s HUP couchdb-app
+SyslogIdentifier=%u
+ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/couchdb-app.ctr-id
+PIDFile=%t/couchdb-app.pid
+Type=forking
+
+[Install]
+WantedBy=default.target

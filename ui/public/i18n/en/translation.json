@@ -29,6 +29,8 @@
     "configure_instance": "Configure {instance}",
     "save": "Save",
     "couchdb_fqdn": "couchdb hostname (FQDN)",
+    "couchdb_username": "Couchdb Username",
+    "couchdb_password": "Couchdb Password",
     "lets_encrypt": "Request LE Certificate",
     "http_to_https": "Force HTTPS",
     "enabled": "Enabled",

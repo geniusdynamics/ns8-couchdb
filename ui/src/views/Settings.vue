@@ -33,6 +33,27 @@
               ref="host"
             >
             </cv-text-input>
+            <cv-text-input
+              :label="$t('settings.couchdb_username')"
+              placeholder="admin"
+              v-model.trim="couchdb_username"
+              class="mg-bottom"
+              :invalid-message="$t(error.couchdb_username)"
+              :disabled="loading.getConfiguration || loading.configureModule"
+              ref="couchdb_username"
+            >
+            </cv-text-input>
+            <cv-text-input
+              :label="$t('settings.couchdb_password')"
+              placeholder="**********"
+              v-model="couchdb_password"
+              class="mg-bottom"
+              :invalid-message="$t(error.couchdb_password)"
+              :disabled="loading.getConfiguration || loading.configureModule"
+              type="password"
+              ref="couchdb_password"
+            >
+            </cv-text-input>
             <cv-toggle
               value="letsEncrypt"
               :label="$t('settings.lets_encrypt')"
@@ -61,12 +82,11 @@
                 $t("settings.enabled")
               }}</template>
             </cv-toggle>
-              <!-- advanced options -->
+            <!-- advanced options -->
             <cv-accordion ref="accordion" class="maxwidth mg-bottom">
               <cv-accordion-item :open="toggleAccordion[0]">
                 <template slot="title">{{ $t("settings.advanced") }}</template>
-                <template slot="content">
-                </template>
+                <template slot="content"> </template>
               </cv-accordion-item>
             </cv-accordion>
             <cv-row v-if="error.configureModule">
@@ -123,6 +143,8 @@ export default {
       },
       urlCheckInterval: null,
       host: "",
+      couchdb_password: "",
+      couchdb_username: "",
       isLetsEncryptEnabled: false,
       isHttpToHttpsEnabled: true,
       loading: {
@@ -133,6 +155,8 @@ export default {
         getConfiguration: "",
         configureModule: "",
         host: "",
+        couchdb_password: "",
+        couchdb_username: "",
         lets_encrypt: "",
         http2https: "",
       },
@@ -164,13 +188,13 @@ export default {
       // register to task error
       this.core.$root.$once(
         `${taskAction}-aborted-${eventId}`,
-        this.getConfigurationAborted
+        this.getConfigurationAborted,
       );
 
       // register to task completion
       this.core.$root.$once(
         `${taskAction}-completed-${eventId}`,
-        this.getConfigurationCompleted
+        this.getConfigurationCompleted,
       );
 
       const res = await to(
@@ -181,7 +205,7 @@ export default {
             isNotificationHidden: true,
             eventId,
           },
-        })
+        }),
       );
       const err = res[0];
 
@@ -202,6 +226,8 @@ export default {
       this.host = config.host;
       this.isLetsEncryptEnabled = config.lets_encrypt;
       this.isHttpToHttpsEnabled = config.http2https;
+      this.couchdb_username = config.couchdb_username;
+      this.couchdb_password = config.couchdb_password;
 
       this.loading.getConfiguration = false;
       this.focusElement("host");
@@ -250,25 +276,27 @@ export default {
       // register to task error
       this.core.$root.$once(
         `${taskAction}-aborted-${eventId}`,
-        this.configureModuleAborted
+        this.configureModuleAborted,
       );
 
       // register to task validation
       this.core.$root.$once(
         `${taskAction}-validation-failed-${eventId}`,
-        this.configureModuleValidationFailed
+        this.configureModuleValidationFailed,
       );
 
       // register to task completion
       this.core.$root.$once(
         `${taskAction}-completed-${eventId}`,
-        this.configureModuleCompleted
+        this.configureModuleCompleted,
       );
       const res = await to(
         this.createModuleTaskForApp(this.instanceName, {
           action: taskAction,
           data: {
             host: this.host,
+            couchdb_password: this.couchdb_password,
+            couchdb_username: this.couchdb_username,
             lets_encrypt: this.isLetsEncryptEnabled,
             http2https: this.isHttpToHttpsEnabled,
           },
@@ -279,7 +307,7 @@ export default {
             description: this.$t("settings.configuring"),
             eventId,
           },
-        })
+        }),
       );
       const err = res[0];
 
