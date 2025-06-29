@@ -23,7 +23,7 @@ config["http2https"] = os.getenv("TRAEFIK_HTTP2HTTPS") == "True"
 config["lets_encrypt"] = os.getenv("TRAEFIK_LETS_ENCRYPT") == "True"
 if os.path.exists("couchdb.env"):
     data = agent.read_envfile("couchdb.env")
-    config["couchdb_username"] = data.get("COUCHDB_USERNAME")
+    config["couchdb_username"] = data.get("COUCHDB_USER")
     config["couchdb_password"] = data.get("COUCHDB_PASSWORD")
     config["configured"] = data.get("CONFIGURED", False)
 

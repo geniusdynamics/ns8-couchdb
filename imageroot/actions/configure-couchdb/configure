@@ -8,10 +8,22 @@
 set -e
 source couchdb.env
 
+MAX_RETRIES=10
+RETRY_DELAY=5
+
 hostname="${HOST}"
 username="${COUCHDB_USER}"
 password="${COUCHDB_PASSWORD}"
-if [[ -z "$hostname" ]]; then
+
+# Determine scheme based on TRAEFIK_HTTP2HTTPS
+if [[ "${TRAEFIK_HTTP2HTTPS}" == "True" || "${TRAEFIK_HTTP2HTTPS}" == "true" ]]; then
+	hostname="https://${hostname}"
+else
+	hostname="http://${hostname}"
+fi
+
+# Sanity checks
+if [[ -z "$HOST" ]]; then
 	echo "ERROR: Hostname missing"
 	exit 1
 fi
@@ -19,7 +31,6 @@ if [[ -z "$username" ]]; then
 	echo "ERROR: Username missing"
 	exit 1
 fi
-
 if [[ -z "$password" ]]; then
 	echo "ERROR: Password missing"
 	exit 1
@@ -27,16 +38,39 @@ fi
 
 echo "-- Configuring CouchDB by REST APIs... -->"
 
-until (curl -X POST "${hostname}/_cluster_setup" -H "Content-Type: application/json" -d "{\"action\":\"enable_single_node\",\"username\":\"${username}\",\"password\":\"${password}\",\"bind_address\":\"0.0.0.0\",\"port\":5984,\"singlenode\":true}" --user "${username}:${password}"); do sleep 5; done
-until (curl -X PUT "${hostname}/_node/nonode@nohost/_config/chttpd/require_valid_user" -H "Content-Type: application/json" -d '"true"' --user "${username}:${password}"); do sleep 5; done
-until (curl -X PUT "${hostname}/_node/nonode@nohost/_config/chttpd_auth/require_valid_user" -H "Content-Type: application/json" -d '"true"' --user "${username}:${password}"); do sleep 5; done
-until (curl -X PUT "${hostname}/_node/nonode@nohost/_config/httpd/WWW-Authenticate" -H "Content-Type: application/json" -d '"Basic realm=\"couchdb\""' --user "${username}:${password}"); do sleep 5; done
-until (curl -X PUT "${hostname}/_node/nonode@nohost/_config/httpd/enable_cors" -H "Content-Type: application/json" -d '"true"' --user "${username}:${password}"); do sleep 5; done
-until (curl -X PUT "${hostname}/_node/nonode@nohost/_config/chttpd/enable_cors" -H "Content-Type: application/json" -d '"true"' --user "${username}:${password}"); do sleep 5; done
-until (curl -X PUT "${hostname}/_node/nonode@nohost/_config/chttpd/max_http_request_size" -H "Content-Type: application/json" -d '"4294967296"' --user "${username}:${password}"); do sleep 5; done
-until (curl -X PUT "${hostname}/_node/nonode@nohost/_config/couchdb/max_document_size" -H "Content-Type: application/json" -d '"50000000"' --user "${username}:${password}"); do sleep 5; done
-until (curl -X PUT "${hostname}/_node/nonode@nohost/_config/cors/credentials" -H "Content-Type: application/json" -d '"true"' --user "${username}:${password}"); do sleep 5; done
-until (curl -X PUT "${hostname}/_node/nonode@nohost/_config/cors/origins" -H "Content-Type: application/json" -d '"app://obsidian.md,capacitor://localhost,http://localhost"' --user "${username}:${password}"); do sleep 5; done
+retry_curl() {
+	local desc="$1"
+	shift
+	local count=0
+	until curl --fail "$@"; do
+		((count++))
+		echo "[$desc] Failed attempt $count of $MAX_RETRIES"
+		if ((count >= MAX_RETRIES)); then
+			echo "ERROR: [$desc] failed after $MAX_RETRIES retries."
+			exit 1
+		fi
+		sleep "$RETRY_DELAY"
+	done
+}
+
+retry_curl "Cluster Setup" -X POST "${hostname}/_cluster_setup" -H "Content-Type: application/json" -d "{\"action\":\"enable_single_node\",\"username\":\"${username}\",\"password\":\"${password}\",\"bind_address\":\"0.0.0.0\",\"port\":5984,\"singlenode\":true}" --user "${username}:${password}"
+retry_curl "Require Valid User (chttpd)" -X PUT "${hostname}/_node/nonode@nohost/_config/chttpd/require_valid_user" -H "Content-Type: application/json" -d '"true"' --user "${username}:${password}"
+retry_curl "Require Valid User (auth)" -X PUT "${hostname}/_node/nonode@nohost/_config/chttpd_auth/require_valid_user" -H "Content-Type: application/json" -d '"true"' --user "${username}:${password}"
+retry_curl "WWW-Authenticate Header" -X PUT "${hostname}/_node/nonode@nohost/_config/httpd/WWW-Authenticate" -H "Content-Type: application/json" -d '"Basic realm=\"couchdb\""' --user "${username}:${password}"
+retry_curl "Enable CORS (httpd)" -X PUT "${hostname}/_node/nonode@nohost/_config/httpd/enable_cors" -H "Content-Type: application/json" -d '"true"' --user "${username}:${password}"
+retry_curl "Enable CORS (chttpd)" -X PUT "${hostname}/_node/nonode@nohost/_config/chttpd/enable_cors" -H "Content-Type: application/json" -d '"true"' --user "${username}:${password}"
+retry_curl "Max HTTP Request Size" -X PUT "${hostname}/_node/nonode@nohost/_config/chttpd/max_http_request_size" -H "Content-Type: application/json" -d '"4294967296"' --user "${username}:${password}"
+retry_curl "Max Document Size" -X PUT "${hostname}/_node/nonode@nohost/_config/couchdb/max_document_size" -H "Content-Type: application/json" -d '"50000000"' --user "${username}:${password}"
+retry_curl "CORS Credentials" -X PUT "${hostname}/_node/nonode@nohost/_config/cors/credentials" -H "Content-Type: application/json" -d '"true"' --user "${username}:${password}"
+retry_curl "CORS Origins" -X PUT "${hostname}/_node/nonode@nohost/_config/cors/origins" -H "Content-Type: application/json" -d '"app://obsidian.md,capacitor://localhost,http://localhost"' --user "${username}:${password}"
 
 echo "<-- Configuring CouchDB by REST APIs Done!"
-echo "CONFIGURED=true" >couchdb.env
+
+# Append CONFIGURED=true to couchdb.env if not already present
+if ! grep -q "^CONFIGURED=" couchdb.env; then
+	echo "CONFIGURED=true" >>couchdb.env
+	echo "CONFIGURED=true added to couchdb.env"
+else
+	sed -i 's/^CONFIGURED=.*/CONFIGURED=true/' couchdb.env
+	echo "CONFIGURED=true updated in couchdb.env"
+fi
