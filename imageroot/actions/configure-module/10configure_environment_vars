@@ -15,7 +15,16 @@ data = json.load(sys.stdin)
 
 COUCHDB_USERNAME = data.get("couchdb_username", "")
 COUCHDB_PASS = data.get("couchdb_password", "")
-app_config = {"COUCHDB_USER": COUCHDB_USERNAME, "COUCHDB_PASSWORD": COUCHDB_PASS}
+HOST = data.get("host", "")
+app_config = {
+    "COUCHDB_USER": COUCHDB_USERNAME,
+    "COUCHDB_PASSWORD": COUCHDB_PASS,
+    "HOST": HOST,
+    "COUCHDB_BIND_ADDRESS": "0.0.0.0",
+    "COUCHDB_CREATE_DATABASES": "yes",
+    "COUCHDB_SINGLE_NODE": "true",
+    "CONFIGURED": True,
+}
 agent.write_envfile("couchdb.env", app_config)
 
 # This is specific to you module, so you need to change it accordingly.

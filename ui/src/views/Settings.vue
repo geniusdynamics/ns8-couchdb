@@ -86,7 +86,19 @@
             <cv-accordion ref="accordion" class="maxwidth mg-bottom">
               <cv-accordion-item :open="toggleAccordion[0]">
                 <template slot="title">{{ $t("settings.advanced") }}</template>
-                <template slot="content"> </template>
+                <template slot="content">
+                  <NsButton
+                    kind="primary"
+                    title="Configure Script"
+                    :icon="Save20"
+                    :loading="loading.runConfigureScript"
+                    :disabled="
+                      loading.runConfigureScript || loading.getConfiguration
+                    "
+                  >
+                    Run Configure Script
+                  </NsButton>
+                </template>
               </cv-accordion-item>
             </cv-accordion>
             <cv-row v-if="error.configureModule">
@@ -150,6 +162,7 @@ export default {
       loading: {
         getConfiguration: false,
         configureModule: false,
+        runConfigureScript: false,
       },
       error: {
         getConfiguration: "",
@@ -328,6 +341,48 @@ export default {
 
       // reload configuration
       this.getConfiguration();
+    },
+    async configureScript() {
+      const taskAction = "configure-couchdb";
+      const eventId = this.getUuid();
+      this.loading.runConfigureScript = true;
+
+      this.core.$root.$once(
+        `${taskAction}-validation-failed-${eventId}`,
+        this.configureModuleValidationFailed,
+      );
+
+      // register to task completion
+      this.core.$root.$once(
+        `${taskAction}-completed-${eventId}`,
+        this.configureModuleCompleted,
+      );
+      const res = await to(
+        this.createModuleTaskForApp(this.instanceName, {
+          action: taskAction,
+          data: {
+            host: this.host,
+            lets_encrypt: this.isLetsEncryptEnabled,
+            http2https: this.isHttpToHttpsEnabled,
+          },
+          extra: {
+            title: this.$t("settings.instance_configuration", {
+              instance: this.instanceName,
+            }),
+            description: this.$t("settings.configuring"),
+            eventId,
+          },
+        }),
+      );
+      const err = res[0];
+
+      if (err) {
+        console.error(`error creating task ${taskAction}`, err);
+        this.error.configureModule = this.getErrorMessage(err);
+        this.loading.runConfigureScript = false;
+        return;
+      }
+      this.loading.runConfigureScript = false;
     },
   },
 };
