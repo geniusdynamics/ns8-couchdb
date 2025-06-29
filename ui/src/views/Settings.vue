@@ -159,6 +159,7 @@ export default {
       couchdb_username: "",
       isLetsEncryptEnabled: false,
       isHttpToHttpsEnabled: true,
+      configured: false,
       loading: {
         getConfiguration: false,
         configureModule: false,
@@ -241,6 +242,7 @@ export default {
       this.isHttpToHttpsEnabled = config.http2https;
       this.couchdb_username = config.couchdb_username;
       this.couchdb_password = config.couchdb_password;
+      this.configured = config.configured;
 
       this.loading.getConfiguration = false;
       this.focusElement("host");

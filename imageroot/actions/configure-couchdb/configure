@@ -39,3 +39,4 @@ until (curl -X PUT "${hostname}/_node/nonode@nohost/_config/cors/credentials" -H
 until (curl -X PUT "${hostname}/_node/nonode@nohost/_config/cors/origins" -H "Content-Type: application/json" -d '"app://obsidian.md,capacitor://localhost,http://localhost"' --user "${username}:${password}"); do sleep 5; done
 
 echo "<-- Configuring CouchDB by REST APIs Done!"
+echo "CONFIGURED=true" >couchdb.env

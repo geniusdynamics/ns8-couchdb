@@ -25,6 +25,7 @@ if os.path.exists("couchdb.env"):
     data = agent.read_envfile("couchdb.env")
     config["couchdb_username"] = data.get("COUCHDB_USERNAME")
     config["couchdb_password"] = data.get("COUCHDB_PASSWORD")
+    config["configured"] = data.get("CONFIGURED", False)
 
 # Dump the configuration to stdout
 # json.dump(config, fp=sys.stdout)

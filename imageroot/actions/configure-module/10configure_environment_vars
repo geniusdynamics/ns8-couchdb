@@ -23,7 +23,6 @@ app_config = {
     "COUCHDB_BIND_ADDRESS": "0.0.0.0",
     "COUCHDB_CREATE_DATABASES": "yes",
     "COUCHDB_SINGLE_NODE": "true",
-    "CONFIGURED": True,
 }
 agent.write_envfile("couchdb.env", app_config)
 
