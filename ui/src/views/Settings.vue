@@ -88,6 +88,7 @@
                 <template slot="title">{{ $t("settings.advanced") }}</template>
                 <template slot="content">
                   <NsButton
+                    @click.prevent="configureScript"
                     kind="primary"
                     title="Configure Script"
                     :icon="Save20"
