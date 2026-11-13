@@ -1,9 +1,12 @@
 {
   "name": "couchdb",
   "description": {
-    "en": "My couchdb module"
+    "en": "Apache CouchDB is a document database that stores JSON data and syncs between devices through its HTTP API.",
+    "it": "Apache CouchDB è un database a documenti che memorizza dati JSON e li sincronizza tra dispositivi tramite API HTTP."
   },
-  "categories": [],
+  "categories": [
+    "database"
+  ],
   "authors": [
     {
       "name": "Name Surname",
