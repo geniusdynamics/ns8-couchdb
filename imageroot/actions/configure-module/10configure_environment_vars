@@ -8,13 +8,21 @@
 import json
 import sys
 import agent
+import os
+import secrets
 
 # Try to parse the stdin as JSON.
 # If parsing fails, output everything to stderr
 data = json.load(sys.stdin)
 
-COUCHDB_USERNAME = data.get("couchdb_username", "")
-COUCHDB_PASS = data.get("couchdb_password", "")
+# CouchDB 3 refuses to start without an administrator ("Admin Party"):
+# keep the current one, or create admin with a generated password
+try:
+    _current = agent.read_envfile("couchdb.env")
+except FileNotFoundError:
+    _current = {}
+COUCHDB_USERNAME = data.get("couchdb_username") or _current.get("COUCHDB_USER") or "admin"
+COUCHDB_PASS = data.get("couchdb_password") or _current.get("COUCHDB_PASSWORD") or secrets.token_urlsafe(16)
 HOST = data.get("host", "")
 app_config = {
     "COUCHDB_USER": COUCHDB_USERNAME,
@@ -25,6 +33,7 @@ app_config = {
     "COUCHDB_SINGLE_NODE": "true",
 }
 agent.write_envfile("couchdb.env", app_config)
+os.chmod("couchdb.env", 0o600)  # holds the administrator password
 
 # This is specific to you module, so you need to change it accordingly.
 # agent.dump_env()
